@@ -11,9 +11,10 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import date
-from typing import Any
+from typing import Any, Callable
 
 from strands import Agent
+from strands.hooks import BeforeToolCallEvent
 
 from ..blobs import Blobs
 from ..service import Household
@@ -21,6 +22,16 @@ from .prompts import SYSTEM_PROMPT, TRANSCRIBE_PROMPT
 from .tools import TurnContext, build_tools
 
 ACTOR_ID = "jordan"  # one household, one user
+
+PROGRESS_LABELS = {
+    "list_household": "Looking at what's already recorded",
+    "get_agreements": "Reading the agreements on file",
+    "read_document": "Reading a document",
+    "propose_agreement": "Drafting terms for your OK",
+    "record_bill": "Recording the bill",
+    "check_bill": "Checking the bill against the agreement",
+    "propose_bill_approval": "Preparing an approval for your OK",
+}
 
 
 @dataclass
@@ -129,10 +140,16 @@ def run_turn(
     settings: Settings | None = None,
     model: Any = None,
     transcribe=None,
+    on_progress: Callable[[str], None] | None = None,
 ) -> dict:
     settings = settings or Settings()
     ctx = TurnContext(hh=hh, session_id=session_id, transcribe=transcribe)
     agent = build_agent(ctx, settings, model)
+    if on_progress:
+        agent.hooks.add_callback(
+            BeforeToolCallEvent,
+            lambda e: on_progress(PROGRESS_LABELS.get(e.tool_use["name"], "Working")),
+        )
     start = len(agent.messages)
     result = agent(compose_message(hh, text, source_ids or [], transcribe))
     tools_used = [

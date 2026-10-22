@@ -6,7 +6,7 @@ from helperpay.models import Helper
 from helperpay.service import Conflict, DomainError, Household
 from helperpay.store import MemoryStore
 
-from .starter_pack import LUPE, LUPE_BILL, PRIYA, PRIYA_BILL
+from helperpay.devdata import LUPE, LUPE_BILL, PRIYA, PRIYA_BILL
 
 
 def agreement_payload(version, new_helper=None):

@@ -10,7 +10,7 @@ from helperpay.service import Household
 from helperpay.store import MemoryStore
 
 from .scripted_model import ScriptedModel
-from .starter_pack import LUPE
+from helperpay.devdata import LUPE
 
 LUPE_V1 = LUPE[0].model_dump(mode="json")
 

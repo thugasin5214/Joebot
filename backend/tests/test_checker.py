@@ -6,7 +6,7 @@ import pytest
 from helperpay.checker import LineStatus, check_bill, price_hourly
 from helperpay.models import Bill, BillLine, DayMultiplier, HourlyTerm, RateTier
 
-from .starter_pack import LUPE, LUPE_BILL, PRIYA, PRIYA_BILL, THEO, THEO_BILL
+from helperpay.devdata import LUPE, LUPE_BILL, PRIYA, PRIYA_BILL, THEO, THEO_BILL
 
 
 def statuses(check):
