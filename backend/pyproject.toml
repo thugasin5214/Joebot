@@ -1,7 +1,7 @@
 [project]
 name = "helperpay"
 version = "0.1.0"
-description = "Add your description here"
+description = "Rivera Helper Pay backend: bill checker, household records, assistant"
 readme = "README.md"
 authors = [
     { name = "fengli", email = "thugasin@yahoo.com" }
