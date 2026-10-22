@@ -31,7 +31,7 @@ const ROOT = path.join(__dirname, "..", "..");
 const USERNAME = "jordan";
 
 export interface HelperPayProps extends StackProps {
-  /** Bedrock model or inference profile id, e.g. us.anthropic.claude-sonnet-4-5-20250929-v1:0 */
+  /** Claude model id on Bedrock's Messages-API endpoint, e.g. anthropic.claude-opus-5-5 */
   modelId: string;
 }
 
@@ -102,7 +102,10 @@ export class HelperPayStack extends Stack {
       handler: "index.handler",
       timeout: Duration.seconds(30),
       code: lambda.Code.fromInline(CREATE_USER_CODE),
-      logRetention: logs.RetentionDays.ONE_WEEK,
+      logGroup: new logs.LogGroup(this, "CreateUserLogs", {
+        retention: logs.RetentionDays.ONE_WEEK,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
     });
     password.grantRead(userSetupFn);
     userSetupFn.addToRolePolicy(
@@ -133,10 +136,18 @@ export class HelperPayStack extends Stack {
         MEMORY_ID: memory.attrMemoryId,
         MODEL_ID: props.modelId,
       },
-      logRetention: logs.RetentionDays.ONE_MONTH,
+      logGroup: new logs.LogGroup(this, "ApiLogs", {
+        retention: logs.RetentionDays.ONE_MONTH,
+        removalPolicy: RemovalPolicy.DESTROY,
+      }),
     });
     table.grantReadWriteData(api);
     uploads.grantReadWrite(api);
+    // Current Claude models are served on the Messages-API endpoint (bedrock-mantle).
+    // Its resource ARN format isn't published, so the single inference action is
+    // granted on "*". InvokeModel stays for anyone who overrides MODEL_ID with an
+    // older, ARN-versioned model.
+    api.addToRolePolicy(new iam.PolicyStatement({ actions: ["bedrock-mantle:CreateInference"], resources: ["*"] }));
     api.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"],

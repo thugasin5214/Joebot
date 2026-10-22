@@ -36,7 +36,8 @@ PROGRESS_LABELS = {
 
 @dataclass
 class Settings:
-    model_id: str = os.environ.get("MODEL_ID", "us.anthropic.claude-sonnet-4-5-20250929-v1:0")
+    model_id: str = os.environ.get("MODEL_ID", "anthropic.claude-opus-5-5")
+    effort: str = os.environ.get("EFFORT", "high")
     region: str = os.environ.get("AWS_REGION", "us-east-1")
     memory_id: str | None = os.environ.get("MEMORY_ID") or None
     local_sessions: str = os.environ.get("LOCAL_SESSION_DIR", ".local/sessions")
@@ -74,33 +75,41 @@ def session_manager(settings: Settings, session_id: str):
 
 
 def bedrock_model(settings: Settings):
-    from strands.models import BedrockModel
+    from .model import BedrockMantleModel
 
-    return BedrockModel(model_id=settings.model_id, region_name=settings.region, temperature=0.0, max_tokens=4096)
+    return BedrockMantleModel(model_id=settings.model_id, region=settings.region, effort=settings.effort)
 
 
 def make_transcriber(settings: Settings, blobs: Blobs):
     """Screenshot -> verbatim text, via the same Claude model on Bedrock."""
 
     def transcribe(src: dict) -> str:
-        import boto3
+        import base64
 
-        fmt = (src.get("content_type") or "image/png").split("/")[-1].replace("jpg", "jpeg")
-        client = boto3.client("bedrock-runtime", region_name=settings.region)
-        r = client.converse(
-            modelId=settings.model_id,
+        from .model import mantle_client
+
+        r = mantle_client(settings.region).messages.create(
+            model=settings.model_id,
+            max_tokens=4000,
+            output_config={"effort": "low"},
             messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"image": {"format": fmt, "source": {"bytes": blobs.get(src["blob_key"])}}},
-                        {"text": TRANSCRIBE_PROMPT},
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": src.get("content_type") or "image/png",
+                                "data": base64.b64encode(blobs.get(src["blob_key"])).decode(),
+                            },
+                        },
+                        {"type": "text", "text": TRANSCRIBE_PROMPT},
                     ],
                 }
             ],
-            inferenceConfig={"temperature": 0.0, "maxTokens": 2000},
         )
-        return "".join(b.get("text", "") for b in r["output"]["message"]["content"]).strip()
+        return "".join(b.text for b in r.content if b.type == "text").strip()
 
     return transcribe
 
@@ -108,7 +117,7 @@ def make_transcriber(settings: Settings, blobs: Blobs):
 def build_agent(ctx: TurnContext, settings: Settings, model: Any = None) -> Agent:
     return Agent(
         model=model or bedrock_model(settings),
-        system_prompt=SYSTEM_PROMPT.format(today=date.today().isoformat()),
+        system_prompt=SYSTEM_PROMPT,
         tools=build_tools(ctx),
         session_manager=session_manager(settings, ctx.session_id),
         callback_handler=None,
@@ -116,8 +125,14 @@ def build_agent(ctx: TurnContext, settings: Settings, model: Any = None) -> Agen
 
 
 def compose_message(hh: Household, text: str, source_ids: list[str], transcribe=None) -> str:
-    """Jordan's message plus any attached documents, fenced as data."""
-    parts = [text.strip()] if text.strip() else []
+    """Jordan's message plus any attached documents, fenced as data.
+
+    Today's date rides on each message rather than the system prompt, which must
+    stay byte-identical for the whole conversation.
+    """
+    parts = [f"(Today is {date.today():%A, %B %-d, %Y}.)"]
+    if text.strip():
+        parts.append(text.strip())
     for sid in source_ids:
         src = hh.source(sid)
         if not src.get("text") and src["kind"] == "image" and transcribe:
@@ -184,7 +199,8 @@ def transcript(session_id: str, settings: Settings | None = None) -> list[dict]:
             continue
         text = _CONTEXT_RE.sub("", "\n".join(texts)).strip()
         docs = re.findall(r'<document id="([^"]+)" title="([^"]*)"', text)
-        text = re.sub(r"<document .*?</document>", "", text, flags=re.S).strip()
+        text = re.sub(r"<document .*?</document>", "", text, flags=re.S)
+        text = re.sub(r"^\(Today is [^)]*\.\)\s*", "", text).strip()
         if text or docs:
             out.append({"role": m["role"], "text": text, "documents": [{"source_id": i, "title": t} for i, t in docs]})
     return out
