@@ -1,0 +1,11 @@
+{
+  "name": "rivera-helper-pay",
+  "private": true,
+  "scripts": {
+    "deploy": "node scripts/deploy.mjs",
+    "destroy": "node scripts/destroy.mjs",
+    "test": "cd backend && uv run pytest -q",
+    "dev:api": "cd backend && uv run python -m helperpay.dev_server",
+    "dev:web": "cd frontend && npm run dev"
+  }
+}

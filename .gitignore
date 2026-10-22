@@ -6,3 +6,5 @@ cdk.out/
 dist/
 .DS_Store
 .local/
+infra/cdk.out/
+infra/cdk-outputs.json
