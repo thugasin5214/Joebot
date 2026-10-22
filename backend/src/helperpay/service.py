@@ -316,6 +316,13 @@ class Household:
             "approved_bills_unchanged": approved_affected,
         }
 
+    def pending_terms(self, helper_id: str) -> list[dict]:
+        return [
+            p
+            for p in self.proposals("pending")
+            if p["kind"] == "agreement" and p["payload"]["agreement"]["helper_id"] == helper_id
+        ]
+
     def proposals(self, status: str | None = None) -> list[dict]:
         out = sorted(self.db.query("PROPOSAL#"), key=lambda p: p["created_at"])
         return [p for p in out if status is None or p["status"] == status]
@@ -393,6 +400,11 @@ class Household:
         record = self.bill_record(bill_id)
         if record["status"] != BillStatus.OPEN.value:
             raise Conflict(f"This bill is {record['status']}; it can't be approved again.")
+        if self.pending_terms(record["helper_id"]):
+            raise DomainError(
+                "A change to this helper's terms is waiting for your OK. Save or reject it first, "
+                "so the bill is checked against the right terms."
+            )
         computed, lines, missing = self.payable(bill_id, decisions)
         if missing:
             raise DomainError("Decide these first: " + "; ".join(missing))

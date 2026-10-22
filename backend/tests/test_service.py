@@ -129,3 +129,13 @@ def test_audit_trail_records_who_did_what(hh):
         ("assistant", "recorded_bill"),
         ("jordan", "approved_bill"),
     ]
+
+
+def test_pending_terms_change_blocks_approval(hh):
+    add_lupe(hh, LUPE[:1])
+    hh.record_bill(LUPE_BILL)
+    p = hh.propose("agreement", agreement_payload(LUPE[1]), "Lupe raise")
+    with pytest.raises(DomainError, match="waiting for your OK"):
+        hh.approve_bill(LUPE_BILL.bill_id, {}, D(780))
+    hh.confirm_proposal(p["proposal_id"])
+    hh.approve_bill(LUPE_BILL.bill_id, {}, D(800))

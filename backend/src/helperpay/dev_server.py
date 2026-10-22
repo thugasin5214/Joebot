@@ -2,7 +2,7 @@
 
     uv run python -m helperpay.dev_server [--seed] [--bedrock] [--port 8787]
 
---seed     load the starter pack as pending proposals and open bills (for UI work)
+--seed [DIR]  load the starter pack (and its documents from DIR) as pending proposals and open bills (for UI work)
 --bedrock  use Claude on Bedrock with your local AWS credentials
 """
 
@@ -105,14 +105,14 @@ def make_handler(app: App):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8787)
-    ap.add_argument("--seed", action="store_true")
+    ap.add_argument("--seed", nargs="?", const="", default=None, metavar="STARTER_PACK_DIR")
     ap.add_argument("--bedrock", action="store_true")
     args = ap.parse_args()
     app = make_app(args.bedrock)
-    if args.seed:
+    if args.seed is not None:
         from .offline import seed_starter_pack
 
-        seed_starter_pack(app.hh)
+        seed_starter_pack(app.hh, args.seed or None)
         print("Seeded the starter pack.")
     print(f"API on http://localhost:{args.port}  (model: {'Bedrock' if args.bedrock else 'offline stub'})")
     ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(app)).serve_forever()

@@ -152,6 +152,14 @@ class App:
             "undecided": missing,
             "source": source,
             "versions": [v.model_dump(mode="json") for v in self.hh.versions(rec["helper_id"])],
+            "pending_terms": [
+                {
+                    "proposal_id": p["proposal_id"],
+                    "summary": p["summary"],
+                    "after": next((i["after"] for i in p["preview"]["open_bill_impact"] if i["bill_id"] == bid), None),
+                }
+                for p in self.hh.pending_terms(rec["helper_id"])
+            ],
         }
 
     def sessions(self, _body) -> list[dict]:
