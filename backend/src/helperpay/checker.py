@@ -231,6 +231,15 @@ def check_line(
             )
         if not (bill.period_start <= line.date <= bill.period_end):
             flags.append(Flag(level="warn", message="Date is outside the billing period."))
+        actual_day = WEEKDAYS[line.date.weekday()]
+        if line.stated_weekday and line.stated_weekday != actual_day:
+            flags.append(
+                Flag(
+                    level="warn",
+                    message=f"Bill says {line.stated_weekday.title()}, but {line.date:%b %-d, %Y} "
+                    f"is a {line.date:%A}. Check the date.",
+                )
+            )
     else:
         in_period = versions_in_period(versions, bill.period_start, bill.period_end)
         if not in_period:

@@ -109,6 +109,8 @@ class AgreementVersion(BaseModel):
     date_notes: list[DateNote] = []
     notes: list[str] = []  # conditions we do not price, kept for Jordan
     sources: list[SourceRef] = []
+    # "written": both sides agreed in writing; "recollection": from Jordan's memory only
+    basis: Literal["written", "recollection"] = "written"
     confirmed_at: datetime | None = None
 
     def term(self, code: str) -> Term | None:
@@ -138,14 +140,14 @@ class BillLine(BaseModel):
     unit_price: Money | None = None
     amount: Money
     term_code: str | None = None  # extraction's guess; None = no matching term
+    stated_weekday: Weekday | None = None  # as written ("Fri 9/4"), to catch date slips
     claimed_justification: str = ""  # e.g. "Sam said that was fine"
 
 
 class BillStatus(StrEnum):
-    DRAFT = "draft"
-    CHECKED = "checked"
-    APPROVED = "approved"
-    REJECTED = "rejected"
+    OPEN = "open"  # recorded, can still be corrected
+    APPROVED = "approved"  # locked forever
+    SUPERSEDED = "superseded"  # replaced by a corrected bill from the helper
 
 
 class Bill(BaseModel):
@@ -157,4 +159,4 @@ class Bill(BaseModel):
     lines: list[BillLine]
     stated_total: Money | None = None
     source_id: str | None = None
-    status: BillStatus = BillStatus.DRAFT
+    status: BillStatus = BillStatus.OPEN
