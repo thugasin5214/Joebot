@@ -6,6 +6,8 @@ Jordan drops in whatever they have (their own notes, screenshots of text threads
 
 See [DESIGN.md](DESIGN.md) for the decisions behind it.
 
+![Runtime architecture](docs/architecture.svg)
+
 ## Model and region
 
 | | |
@@ -88,6 +90,8 @@ uv run --project backend python scripts/e2e_starter_pack.py ../candidate-pack/st
 ## Release pipeline with a coding agent (optional)
 
 A closed loop inside AWS: ask for a change in plain words, an agent writes it, the pipeline tests it and puts it on a staging copy, and a person approves it before it reaches production.
+
+![Release pipeline](docs/release-pipeline.svg)
 
 ```
 npm run change -- "Let Jordan add a tip line to any bill"
