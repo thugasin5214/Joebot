@@ -76,6 +76,11 @@ def test_price_hourly(on, start, end, expected):
     assert not ambiguous
 
 
+def test_tier_written_as_ending_2359_runs_to_midnight():
+    term = SITTER.model_copy(update={"tiers": [RateTier(start=time(22), end=time(23, 59), rate=D(28))]})
+    assert price_hourly(term, date(2026, 9, 12), time(19), time(0))[0] == D(122)
+
+
 def test_sunday_late_is_flagged_ambiguous():
     amount, steps, ambiguous = price_hourly(SITTER, date(2026, 9, 20), time(20), time(23))
     assert ambiguous

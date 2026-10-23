@@ -12,7 +12,7 @@ from decimal import Decimal
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 Money = Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
 
@@ -29,6 +29,12 @@ class RateTier(BaseModel):
     start: time
     end: time  # may wrap past midnight (end <= start)
     rate: Money
+
+    @field_validator("end")
+    @classmethod
+    def _until_midnight(cls, v: time) -> time:
+        # "until 11:59pm" means until midnight; otherwise the last minute is priced at the base rate.
+        return time(0) if (v.hour, v.minute) == (23, 59) else v
 
 
 class DayMultiplier(BaseModel):
