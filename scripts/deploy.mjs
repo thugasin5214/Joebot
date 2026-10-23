@@ -35,13 +35,15 @@ if (!region) {
 console.log(`→ Deploying to account ${account}, region ${region}`);
 
 const env = { ...process.env, CDK_DEFAULT_ACCOUNT: account, CDK_DEFAULT_REGION: region, AWS_REGION: region };
+const stackName = "RiveraHelperPay";
 const ctx = process.env.MODEL_ID ? `--context modelId=${process.env.MODEL_ID}` : "";
 
 run("npm ci --no-audit --no-fund", { cwd: "frontend" });
 run("npm run build", { cwd: "frontend" });
 run("npm ci --no-audit --no-fund", { cwd: "infra" });
-run(`npx cdk bootstrap aws://${account}/${region}`, { cwd: "infra", env });
-run(`npx cdk deploy --require-approval never --outputs-file cdk-outputs.json ${ctx}`, { cwd: "infra", env });
+// CI skips this: its role may only use the bootstrap roles, not create them.
+if (!process.env.SKIP_BOOTSTRAP) run(`npx cdk bootstrap aws://${account}/${region}`, { cwd: "infra", env });
+run(`npx cdk deploy ${stackName} --require-approval never --outputs-file cdk-outputs.json ${ctx}`, { cwd: "infra", env });
 
 const outputs = Object.values(JSON.parse(readFileSync("infra/cdk-outputs.json", "utf8")))[0];
 console.log(`

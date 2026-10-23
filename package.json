@@ -6,6 +6,7 @@
     "destroy": "node scripts/destroy.mjs",
     "test": "cd backend && uv run pytest -q",
     "dev:api": "cd backend && uv run python -m helperpay.dev_server",
-    "dev:web": "cd frontend && npm run dev"
+    "dev:web": "cd frontend && npm run dev",
+    "setup:ci": "node scripts/setup-ci.mjs"
   }
 }

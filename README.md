@@ -72,7 +72,38 @@ npm run dev:web                                              # web app on :5173
 npm test                                                     # backend tests
 ```
 
-Without `--bedrock`, the local API uses a stub model that explains it's offline. Seeding loads a mid-review state so every screen can be exercised. With AWS credentials and model access, `npm run dev:api -- --bedrock` uses the real model.
+Without a model flag, the local API uses a stub model that explains it's offline. Seeding loads a mid-review state so every screen can be exercised. Two ways to run the real assistant locally:
+
+| Flag | Model | Cost |
+|---|---|---|
+| `--bedrock` | Claude on Bedrock, with your AWS credentials | Bedrock tokens |
+| `--local-model qwen3.8-27b-splash` | Any model on an OpenAI-compatible local server (LM Studio on `localhost:1234` by default; `--local-url` to change). It must read images to transcribe screenshots. | Free |
+
+The local model is for iterating on prompts and flows; the deployed app always uses Claude on Bedrock. To run the whole starter pack against a running API (empty state) and compare each bill with the answer key:
+
+```bash
+uv run --project backend python scripts/e2e_starter_pack.py ../candidate-pack/starter-pack
+```
+
+## Automated deploys and changes (optional)
+
+Once the repo is on GitHub, changes ship without anyone running `npm run deploy` by hand:
+
+```
+issue / PR comment "@claude ..."  →  Claude Code makes the change on a branch, opens a PR
+pull request                      →  CI: backend tests, web build, cdk synth
+review + merge to main            →  Deploy: CI again, then npm run deploy with OIDC credentials
+```
+
+| Workflow | Runs on | Can touch AWS? |
+|---|---|---|
+| `.github/workflows/ci.yml` | every pull request, and before each deploy | No |
+| `.github/workflows/claude.yml` | `@claude` in an issue, PR comment or review | No. Its only output is a pull request |
+| `.github/workflows/deploy.yml` | push to `main`, or run by hand | Yes, via a role only the `production` environment can assume |
+
+One-time setup (needs AWS credentials locally): `npm run setup:ci -- owner/repo`. It bootstraps CDK, creates the `RiveraHelperPayCi` stack (a GitHub OIDC trust and a deploy role that can only use the CDK bootstrap roles), sets the `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION` and `MODEL_ID` repository variables, and prints the GitHub settings to finish: a `production` environment limited to `main` (optionally with a required reviewer), branch protection on `main`, and a `CLAUDE_CODE_OAUTH_TOKEN` secret for `@claude`. `CLAUDE.md` tells the coding agent the rules it must keep (code does the money, the assistant only proposes, approved bills never change). Remove it with `cd infra && npx cdk destroy RiveraHelperPayCi -c githubRepo=owner/repo`.
+
+A new rate or helper is data, not code: Jordan enters it in the app. The pipeline is for changing what the app can do.
 
 ## Repository layout
 
@@ -84,7 +115,8 @@ Without `--bedrock`, the local API uses a stub model that explains it's offline.
 | `backend/src/helperpay/api.py` | HTTP API used by the web app; `lambda_handler.py` adapts it to Lambda |
 | `frontend/` | React web app |
 | `infra/lib/stack.ts` | CDK stack |
-| `scripts/` | One-command deploy and destroy |
+| `scripts/` | One-command deploy and destroy, CI setup, starter-pack end-to-end run |
+| `.github/workflows/` | CI, deploy, and the `@claude` coding agent |
 
 ## Costs
 
