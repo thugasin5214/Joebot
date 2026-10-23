@@ -12,15 +12,20 @@ import os
 import re
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Callable
-
-from strands import Agent
-from strands.hooks import BeforeToolCallEvent
+from typing import TYPE_CHECKING, Any, Callable
 
 from ..blobs import Blobs
 from ..service import Household
 from .prompts import SYSTEM_PROMPT, TRANSCRIBE_PROMPT
-from .tools import TurnContext, build_tools
+
+if TYPE_CHECKING:
+    from strands import Agent
+
+    from .tools import TurnContext
+
+# Strands and the model SDKs are imported inside the functions that need them:
+# most API requests (state, bills, approvals) never touch the agent, and loading
+# it added seconds to every Lambda cold start.
 
 ACTOR_ID = "jordan"  # one household, one user
 
@@ -93,7 +98,8 @@ def make_model(settings: Settings):
             model_id=settings.local_model,
             params={"max_tokens": 16000},
         )
-    from .model import BedrockMantleModel, uses_converse
+    from .model import BedrockMantleModel
+    from .model_ids import uses_converse
 
     if uses_converse(settings.model_id):
         from strands.models.bedrock import BedrockModel
@@ -106,7 +112,7 @@ def make_transcriber(settings: Settings, blobs: Blobs):
     """Screenshot -> verbatim text, via the same model the assistant uses."""
     if settings.local_model:
         return _local_transcriber(settings, blobs)
-    from .model import uses_converse
+    from .model_ids import uses_converse
 
     if uses_converse(settings.model_id):
         return _converse_transcriber(settings, blobs)
@@ -191,6 +197,10 @@ def _local_transcriber(settings: Settings, blobs: Blobs):
 
 
 def build_agent(ctx: TurnContext, settings: Settings, model: Any = None) -> Agent:
+    from strands import Agent
+
+    from .tools import build_tools
+
     return Agent(
         model=model or make_model(settings),
         system_prompt=SYSTEM_PROMPT,
@@ -233,6 +243,10 @@ def run_turn(
     transcribe=None,
     on_progress: Callable[[str], None] | None = None,
 ) -> dict:
+    from strands.hooks import BeforeToolCallEvent
+
+    from .tools import TurnContext
+
     settings = settings or Settings()
     ctx = TurnContext(hh=hh, session_id=session_id, transcribe=transcribe)
     agent = build_agent(ctx, settings, model)

@@ -9,22 +9,15 @@ models (e.g. us.anthropic.claude-opus-4-6-v1) go through Converse; see uses_conv
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
 from anthropic import AnthropicBedrockMantle, AsyncAnthropicBedrockMantle
 from strands.models.anthropic import AnthropicModel
 
+from .model_ids import uses_converse  # noqa: F401  (re-exported)
+
 THINKING_TYPES = {"thinking", "redacted_thinking"}
 
-# Messages-API (Mantle) ids look like "anthropic.claude-opus-5-5". Ids with a
-# cross-region prefix ("us.anthropic..."), a version suffix ("...-v1", "...-v1:0")
-# or an ARN are Bedrock runtime models, called through the Converse API.
-_CONVERSE_ID = re.compile(r"^(arn:|(us|eu|apac|jp|au|global|us-gov)\.)|-v\d+(:\d+)?$")
-
-
-def uses_converse(model_id: str) -> bool:
-    return bool(_CONVERSE_ID.search(model_id))
 
 
 def strip_prior_turn_thinking(messages: list[dict]) -> list[dict]:

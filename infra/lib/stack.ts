@@ -134,7 +134,7 @@ export class HelperPayStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       handler: "helperpay.lambda_handler.handler",
       code: backendCode(),
-      memorySize: 1024,
+      memorySize: 1769, // one full vCPU: faster cold starts and agent turns
       timeout: Duration.minutes(5), // chat jobs; HTTP requests are capped at 30s by API Gateway
       environment: {
         TABLE_NAME: table.tableName,
