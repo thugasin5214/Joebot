@@ -216,6 +216,20 @@ export type BillDetail = {
 
 export type Choice = "agreement" | "billed" | "exclude";
 
+export type BillLine = {
+  line_no: number;
+  raw: string;
+  date: string | null;
+  start: string | null;
+  end: string | null;
+  quantity: string;
+  unit_price: Money | null;
+  amount: Money;
+  term_code: string | null;
+  stated_weekday: string | null;
+  claimed_justification: string;
+};
+
 export type Job = {
   job_id: string;
   status: "running" | "done" | "error";

@@ -99,3 +99,22 @@ def test_unknown_route_and_errors_dont_leak(make):
     app = make(seed=False)
     assert app.handle("GET", "/api/nope", None)[0] == 404
     assert app.handle("POST", "/api/proposals/prop_x/confirm", {})[0] == 400
+
+
+def test_line_editor_payload_corrects_bill_and_rechecks(make):
+    # Exactly what the web editor sends: strings from form fields, HH:MM times.
+    app = make()
+    bid = "priya-2026-09"
+    lines = app.handle("GET", f"/api/bills/{bid}", None)[1]["bill"]["lines"]
+    edited = [
+        {**l, "start": (l["start"] or "")[:5] or None, "end": (l["end"] or "")[:5] or None,
+         "quantity": str(l["quantity"]), "amount": str(l["amount"])}
+        for l in lines if l["term_code"]  # drop the $40 fee line
+    ]
+    for i, l in enumerate(edited, 1):
+        l["line_no"] = i
+    status, d = app.handle("PUT", f"/api/bills/{bid}/lines", {"lines": edited})
+    assert status == 200
+    assert d["undecided"] == [] and d["check"]["undecided_total"] == "0.00"
+    assert d["bill"]["corrected_at"]
+    assert any(a["action"] == "corrected_bill" for a in app.handle("GET", "/api/audit", None)[1])
