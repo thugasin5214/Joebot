@@ -1,4 +1,4 @@
-# Rivera Helper Pay
+# Joebot
 
 An assistant that helps Jordan answer one question each month: **is this bill what we agreed to?**
 
