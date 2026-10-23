@@ -5,7 +5,7 @@ node_modules/
 cdk.out/
 dist/
 .DS_Store
-.local/
+.local*/
 infra/cdk.out/
 infra/cdk-outputs.json
 infra/pipeline-outputs.json
