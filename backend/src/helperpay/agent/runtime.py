@@ -1,8 +1,9 @@
 """Builds the assistant for one request and runs a turn.
 
 Memory: with MEMORY_ID set, conversations live in AgentCore Memory (short-term
-events per session, long-term facts/preferences/summaries per actor). Without it
-(local dev), Strands' file session manager stands in.
+events per session, long-term facts/preferences/summaries per actor). With
+SESSION_BUCKET instead (accounts without AgentCore Memory), conversations are
+kept in S3 with no long-term memory. Locally, Strands' file session manager.
 """
 
 from __future__ import annotations
@@ -40,6 +41,7 @@ class Settings:
     effort: str = os.environ.get("EFFORT", "high")
     region: str = os.environ.get("AWS_REGION", "us-east-1")
     memory_id: str | None = os.environ.get("MEMORY_ID") or None
+    session_bucket: str | None = os.environ.get("SESSION_BUCKET") or None  # fallback without AgentCore Memory
     local_sessions: str = os.environ.get("LOCAL_SESSION_DIR", ".local/sessions")
     # Local development only: an OpenAI-compatible server (LM Studio, Ollama) instead of Bedrock.
     local_model: str | None = os.environ.get("LOCAL_MODEL") or None
@@ -71,6 +73,11 @@ def session_manager(settings: Settings, session_id: str):
             },
         )
         return AgentCoreMemorySessionManager(config, region_name=settings.region)
+
+    if settings.session_bucket:
+        from strands.session.s3_session_manager import S3SessionManager
+
+        return S3SessionManager(session_id=session_id, bucket=settings.session_bucket, prefix="sessions/", region_name=settings.region)
 
     from strands.session.file_session_manager import FileSessionManager
 

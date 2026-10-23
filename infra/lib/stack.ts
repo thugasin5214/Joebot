@@ -33,6 +33,11 @@ const USERNAME = "jordan";
 export interface HelperPayProps extends StackProps {
   /** Claude model id on Bedrock's Messages-API endpoint, e.g. anthropic.claude-opus-5-5 */
   modelId: string;
+  /**
+   * AgentCore Memory for conversations (default). false = keep conversations in S3
+   * instead, for accounts where AgentCore Memory isn't enabled yet.
+   */
+  agentCoreMemory?: boolean;
 }
 
 export class HelperPayStack extends Stack {
@@ -62,7 +67,8 @@ export class HelperPayStack extends Stack {
     // Short-term: conversation events per session. Long-term: facts and
     // preferences per actor, summaries per session. Namespaces must match
     // backend/src/helperpay/agent/runtime.py:namespaces().
-    const memory = new agentcore.CfnMemory(this, "Memory", {
+    const useMemory = props.agentCoreMemory ?? true;
+    const memory = useMemory ? new agentcore.CfnMemory(this, "Memory", {
       name: `${this.stackName.replace(/[^A-Za-z0-9]/g, "_")}_memory`.slice(0, 48),
       description: "Rivera Helper Pay assistant memory",
       eventExpiryDuration: 90,
@@ -71,7 +77,7 @@ export class HelperPayStack extends Stack {
         { userPreferenceMemoryStrategy: { name: "JordanPreferences", namespaces: ["/preferences/{actorId}/"] } },
         { summaryMemoryStrategy: { name: "ConversationSummaries", namespaces: ["/summaries/{actorId}/{sessionId}/"] } },
       ],
-    });
+    }) : undefined;
 
     // --------------------------------------------------------------- auth
 
@@ -133,8 +139,8 @@ export class HelperPayStack extends Stack {
       environment: {
         TABLE_NAME: table.tableName,
         UPLOAD_BUCKET: uploads.bucketName,
-        MEMORY_ID: memory.attrMemoryId,
         MODEL_ID: props.modelId,
+        ...(memory ? { MEMORY_ID: memory.attrMemoryId } : { SESSION_BUCKET: uploads.bucketName }),
       },
       logGroup: new logs.LogGroup(this, "ApiLogs", {
         retention: logs.RetentionDays.ONE_MONTH,
@@ -157,7 +163,7 @@ export class HelperPayStack extends Stack {
         ],
       }),
     );
-    api.addToRolePolicy(
+    if (memory) api.addToRolePolicy(
       new iam.PolicyStatement({
         actions: [
           "bedrock-agentcore:CreateEvent",
@@ -243,7 +249,7 @@ export class HelperPayStack extends Stack {
       description: "Run this to print the password",
     });
     new CfnOutput(this, "ModelId", { value: props.modelId });
-    new CfnOutput(this, "MemoryId", { value: memory.attrMemoryId });
+    new CfnOutput(this, "MemoryId", { value: memory ? memory.attrMemoryId : "none (conversations in S3)" });
   }
 }
 

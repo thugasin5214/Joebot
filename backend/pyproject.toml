@@ -21,6 +21,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "botocore[crt]>=1.43.118",
     "openai>=3.37.0",
     "pytest>=9.1.1",
 ]

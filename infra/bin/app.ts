@@ -8,7 +8,11 @@ const app = new App();
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION };
 const modelId = app.node.tryGetContext("modelId") ?? "anthropic.claude-opus-5-5";
 
-new HelperPayStack(app, app.node.tryGetContext("stackName") ?? "RiveraHelperPay", { env, modelId });
+new HelperPayStack(app, app.node.tryGetContext("stackName") ?? "RiveraHelperPay", {
+  env,
+  modelId,
+  agentCoreMemory: app.node.tryGetContext("agentCoreMemory") !== "false",
+});
 
 // Optional release pipeline with a coding agent: npm run setup:pipeline -- you@example.com
 if (app.node.tryGetContext("pipeline")) {

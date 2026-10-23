@@ -3,6 +3,7 @@
 //   npm run deploy                     (uses your AWS CLI profile and region)
 //   MODEL_ID=... npm run deploy        (override the Bedrock model / inference profile)
 //   STACK_NAME=... npm run deploy      (a second copy, e.g. the pipeline's staging stack)
+//   AGENTCORE_MEMORY=false npm run deploy  (conversations in S3, if AgentCore Memory isn't enabled on the account)
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -37,7 +38,8 @@ console.log(`→ Deploying to account ${account}, region ${region}`);
 
 const env = { ...process.env, CDK_DEFAULT_ACCOUNT: account, CDK_DEFAULT_REGION: region, AWS_REGION: region };
 const stackName = process.env.STACK_NAME || "RiveraHelperPay";
-const ctx = `--context stackName=${stackName}` + (process.env.MODEL_ID ? ` --context modelId=${process.env.MODEL_ID}` : "");
+const ctx = `--context stackName=${stackName}` + (process.env.MODEL_ID ? ` --context modelId=${process.env.MODEL_ID}` : "") +
+  (process.env.AGENTCORE_MEMORY === "false" ? " --context agentCoreMemory=false" : "");
 
 run("npm ci --no-audit --no-fund", { cwd: "frontend" });
 run("npm run build", { cwd: "frontend" });
