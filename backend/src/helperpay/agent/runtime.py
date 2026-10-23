@@ -37,7 +37,7 @@ PROGRESS_LABELS = {
 
 @dataclass
 class Settings:
-    model_id: str = os.environ.get("MODEL_ID", "anthropic.claude-opus-5-5")
+    model_id: str = os.environ.get("MODEL_ID", "us.anthropic.claude-opus-4-6-v1")
     effort: str = os.environ.get("EFFORT", "high")
     region: str = os.environ.get("AWS_REGION", "us-east-1")
     memory_id: str | None = os.environ.get("MEMORY_ID") or None

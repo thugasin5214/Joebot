@@ -31,7 +31,7 @@ const ROOT = path.join(__dirname, "..", "..");
 const USERNAME = "jordan";
 
 export interface HelperPayProps extends StackProps {
-  /** Claude model id on Bedrock's Messages-API endpoint, e.g. anthropic.claude-opus-5-5 */
+  /** Claude model id on Bedrock: an inference profile (us.anthropic.claude-opus-4-6-v1, Converse) or a Messages-API id (anthropic.claude-opus-5-5) */
   modelId: string;
   /**
    * AgentCore Memory for conversations (default). false = keep conversations in S3

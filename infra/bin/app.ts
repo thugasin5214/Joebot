@@ -6,7 +6,7 @@ import { HelperPayStack } from "../lib/stack";
 const app = new App();
 // Account and region come from your AWS CLI profile (or CDK_DEFAULT_* env vars).
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION };
-const modelId = app.node.tryGetContext("modelId") ?? "anthropic.claude-opus-5-5";
+const modelId = app.node.tryGetContext("modelId") ?? "us.anthropic.claude-opus-4-6-v1";
 
 new HelperPayStack(app, app.node.tryGetContext("stackName") ?? "RiveraHelperPay", {
   env,

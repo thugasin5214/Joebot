@@ -10,16 +10,16 @@ See [DESIGN.md](DESIGN.md) for the decisions behind it.
 
 | | |
 |---|---|
-| Model | **Claude Opus 5.5** on Amazon Bedrock, model ID `anthropic.claude-opus-5-5` |
-| Endpoint | Bedrock's Messages-API endpoint (`bedrock-mantle.{region}.api.aws`), SigV4 with the Lambda role |
+| Model | **Claude Opus 4.6** on Amazon Bedrock, model ID `us.anthropic.claude-opus-4-6-v1` (US cross-region inference profile) |
+| API | Bedrock Converse, SigV4 with the Lambda role |
 | Region | The region you deploy to (tested target: `us-east-1`). Any region that has both Claude in Amazon Bedrock and Bedrock AgentCore Memory works, e.g. `us-east-1`, `us-west-2`, `eu-central-1`. |
 
-To use another model, set `MODEL_ID` when deploying, for example `MODEL_ID=anthropic.claude-sonnet-5-5 npm run deploy`. Ids in the Messages-API form (`anthropic.claude-…`, no version suffix) use that endpoint; inference-profile or versioned ids such as `us.anthropic.claude-opus-4-6-v1` use the Converse API. A new AWS account may need the Anthropic use case form submitted and non-zero Bedrock quotas for the chosen model (Service Quotas → Amazon Bedrock).
+The code was built for and also runs **Claude Opus 5.5** (`MODEL_ID=anthropic.claude-opus-5-5 npm run deploy`, through Bedrock's Messages-API endpoint). The account I tested on has a zero Bedrock quota for Opus 5.5, so the default is Opus 4.6, which I verified end to end on the deployed app. To use another model, set `MODEL_ID` when deploying, for example `MODEL_ID=anthropic.claude-sonnet-5-5 npm run deploy`. Ids in the Messages-API form (`anthropic.claude-…`, no version suffix) use that endpoint; inference-profile or versioned ids such as `us.anthropic.claude-opus-4-6-v1` use the Converse API. A new AWS account may need the Anthropic use case form submitted and non-zero Bedrock quotas for the chosen model (Service Quotas → Amazon Bedrock).
 
 ## Prerequisites
 
 1. **AWS account and credentials** for the AWS CLI v2 (`aws sts get-caller-identity` works), with a default region set (`aws configure set region us-east-1`) or `AWS_REGION` exported. The deploying identity needs permission to run CDK (CloudFormation, IAM, Lambda, S3, DynamoDB, Cognito, CloudFront, API Gateway, Secrets Manager, Bedrock AgentCore).
-2. **Bedrock model access for Claude Opus 5.5** (`anthropic.claude-opus-5-5`) in that region: AWS Console → Amazon Bedrock → Model access.
+2. **Bedrock access to Claude Opus 4.6** in that region: in the Amazon Bedrock console's Model catalog, submit the Anthropic use case form (once per account) and open Claude Opus 4.6 to accept its terms.
 3. **Node.js 20+** and npm.
 4. **[uv](https://docs.astral.sh/uv/)** (packages the Python backend for Lambda; no Docker needed). If uv is missing, CDK falls back to Docker.
 

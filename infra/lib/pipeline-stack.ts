@@ -183,6 +183,8 @@ export class PipelineStack extends Stack {
       environmentVariables: {
         CHANGE_REQUEST: { value: "" },
         REPO_URL: { value: repo.repositoryCloneUrlHttp },
+        // Both endpoints: Messages-API ids (anthropic.claude-opus-5-5) go to Mantle, the rest to Invoke.
+        CLAUDE_CODE_USE_BEDROCK: { value: "1" },
         CLAUDE_CODE_USE_MANTLE: { value: "1" },
         ANTHROPIC_MODEL: { value: props.agentModelId },
         BUDGET_USD: { value: props.agentBudgetUsd },
@@ -229,6 +231,13 @@ export class PipelineStack extends Stack {
     agent.addToRolePolicy(new iam.PolicyStatement({
       actions: ["bedrock-mantle:CreateInference", "bedrock-mantle:CountTokens"],
       resources: ["*"], // no published resource ARN format for the Messages-API endpoint yet
+    }));
+    agent.addToRolePolicy(new iam.PolicyStatement({
+      actions: ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream", "bedrock:ListInferenceProfiles", "bedrock:GetInferenceProfile"],
+      resources: [
+        "arn:aws:bedrock:*::foundation-model/anthropic.*",
+        `arn:aws:bedrock:*:${this.account}:inference-profile/*`,
+      ],
     }));
 
     new CfnOutput(this, "RepoCloneUrl", { value: repo.repositoryCloneUrlHttp });
