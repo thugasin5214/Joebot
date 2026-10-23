@@ -85,23 +85,30 @@ The local model is for iterating on prompts and flows; the deployed app always u
 uv run --project backend python scripts/e2e_starter_pack.py ../candidate-pack/starter-pack
 ```
 
-## Automated deploys and changes (optional)
+## Release pipeline with a coding agent (optional)
 
-Once the repo is on GitHub, changes ship without anyone running `npm run deploy` by hand:
+A closed loop inside AWS: ask for a change in plain words, an agent writes it, the pipeline tests it and puts it on a staging copy, and a person approves it before it reaches production.
 
 ```
-issue / PR comment "@claude ..."  →  Claude Code makes the change on a branch, opens a PR
-pull request                      →  CI: backend tests, web build, cdk synth
-review + merge to main            →  Deploy: CI again, then npm run deploy with OIDC credentials
+npm run change -- "Let Jordan add a tip line to any bill"
+  → ChangeAgent (CodeBuild running Claude Code on Bedrock): edits code, runs tests, pushes to `proposed`
+  → Pipeline (CodePipeline, one release at a time)
+       Verify      merge onto main · backend tests · web build · cdk synth
+       Staging     deploy RiveraHelperPayStaging · smoke test (app loads, API refuses anonymous calls)
+       Review      email to the reviewer: the change, the staging URL → Approve / Reject
+       Production  deploy RiveraHelperPay → move main to exactly what was approved
 ```
 
-| Workflow | Runs on | Can touch AWS? |
-|---|---|---|
-| `.github/workflows/ci.yml` | every pull request, and before each deploy | No |
-| `.github/workflows/claude.yml` | `@claude` in an issue, PR comment or review | No. Its only output is a pull request |
-| `.github/workflows/deploy.yml` | push to `main`, or run by hand | Yes, via a role only the `production` environment can assume |
+| Guard | How |
+|---|---|
+| The agent can't skip review | Its IAM role can push only to `refs/heads/proposed`; an explicit Deny covers `main`. It has no deploy permissions. |
+| A change can't rewrite its own checks | Build commands live in the pipeline stack, not the repo, and the pipeline doesn't update itself. Changing the pipeline means a person deploys `RiveraHelperPayPipeline`. |
+| Production gets what was reviewed | Every step rebuilds the same tree (proposed merged onto main) and stops if it differs from the tree Verify tested. Releases are queued, so `main` can't move underneath one. |
+| Spend is capped | Each agent run has a dollar budget (`--max-budget-usd`, default $5; `-c agentBudgetUsd=` to change). |
 
-One-time setup (needs AWS credentials locally): `npm run setup:ci -- owner/repo`. It bootstraps CDK, creates the `RiveraHelperPayCi` stack (a GitHub OIDC trust and a deploy role that can only use the CDK bootstrap roles), sets the `AWS_DEPLOY_ROLE_ARN`, `AWS_REGION` and `MODEL_ID` repository variables, and prints the GitHub settings to finish: a `production` environment limited to `main` (optionally with a required reviewer), branch protection on `main`, and a `CLAUDE_CODE_OAUTH_TOKEN` secret for `@claude`. `CLAUDE.md` tells the coding agent the rules it must keep (code does the money, the assistant only proposes, approved bills never change). Remove it with `cd infra && npx cdk destroy RiveraHelperPayCi -c githubRepo=owner/repo`.
+One-time setup (AWS credentials needed locally): `npm run setup:pipeline -- reviewer@example.com`. This creates a CodeCommit repo, the pipeline, the agent and an SNS topic for approval emails. It then pushes this checkout to the repo, which starts the first release. People push their own changes to `proposed` too; only the pipeline writes `main`. To remove it: `cd infra && npx cdk destroy RiveraHelperPayPipeline -c pipeline=1`, then `STACK_NAME=RiveraHelperPayStaging npm run destroy`. The CodeCommit repo is kept on purpose; delete it in the console when you're sure.
+
+Known risk: the staging deploy runs code that no person has read yet, with CDK deploy permissions in the same account. For a real household, put staging in a separate AWS account.
 
 A new rate or helper is data, not code: Jordan enters it in the app. The pipeline is for changing what the app can do.
 
@@ -115,8 +122,8 @@ A new rate or helper is data, not code: Jordan enters it in the app. The pipelin
 | `backend/src/helperpay/api.py` | HTTP API used by the web app; `lambda_handler.py` adapts it to Lambda |
 | `frontend/` | React web app |
 | `infra/lib/stack.ts` | CDK stack |
-| `scripts/` | One-command deploy and destroy, CI setup, starter-pack end-to-end run |
-| `.github/workflows/` | CI, deploy, and the `@claude` coding agent |
+| `infra/lib/pipeline-stack.ts` | Optional release pipeline and coding agent |
+| `scripts/` | One-command deploy and destroy, pipeline setup, `change` requests, starter-pack end-to-end run |
 
 ## Costs
 

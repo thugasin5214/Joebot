@@ -8,4 +8,4 @@ dist/
 .local/
 infra/cdk.out/
 infra/cdk-outputs.json
-infra/ci-outputs.json
+infra/pipeline-outputs.json

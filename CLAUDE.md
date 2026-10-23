@@ -16,4 +16,4 @@ When asked to change behaviour (a new rate shape, a new kind of fee, a UI change
 
 Agreement *data* (a helper's new rate) is not a code change: Jordan enters it in the app. Say so if an issue asks for that.
 
-You can't deploy. Merging to main deploys through `.github/workflows/deploy.yml`.
+You can't deploy or touch `main`. Your commit goes to the `proposed` branch; the release pipeline (`infra/lib/pipeline-stack.ts`) tests it, deploys it to staging, and waits for a person to approve before production. Write a commit-ready change: the reviewer reads the diff.
