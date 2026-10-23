@@ -93,8 +93,12 @@ def make_model(settings: Settings):
             model_id=settings.local_model,
             params={"max_tokens": 16000},
         )
-    from .model import BedrockMantleModel
+    from .model import BedrockMantleModel, uses_converse
 
+    if uses_converse(settings.model_id):
+        from strands.models.bedrock import BedrockModel
+
+        return BedrockModel(model_id=settings.model_id, region_name=settings.region, max_tokens=16000)
     return BedrockMantleModel(model_id=settings.model_id, region=settings.region, effort=settings.effort)
 
 
@@ -102,6 +106,10 @@ def make_transcriber(settings: Settings, blobs: Blobs):
     """Screenshot -> verbatim text, via the same model the assistant uses."""
     if settings.local_model:
         return _local_transcriber(settings, blobs)
+    from .model import uses_converse
+
+    if uses_converse(settings.model_id):
+        return _converse_transcriber(settings, blobs)
 
     def transcribe(src: dict) -> str:
         import base64
@@ -130,6 +138,29 @@ def make_transcriber(settings: Settings, blobs: Blobs):
             ],
         )
         return "".join(b.text for b in r.content if b.type == "text").strip()
+
+    return transcribe
+
+
+def _converse_transcriber(settings: Settings, blobs: Blobs):
+    def transcribe(src: dict) -> str:
+        import boto3
+
+        fmt = (src.get("content_type") or "image/png").split("/")[-1].replace("jpg", "jpeg")
+        r = boto3.client("bedrock-runtime", region_name=settings.region).converse(
+            modelId=settings.model_id,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"image": {"format": fmt, "source": {"bytes": blobs.get(src["blob_key"])}}},
+                        {"text": TRANSCRIBE_PROMPT},
+                    ],
+                }
+            ],
+            inferenceConfig={"maxTokens": 4000},
+        )
+        return "".join(b.get("text", "") for b in r["output"]["message"]["content"]).strip()
 
     return transcribe
 

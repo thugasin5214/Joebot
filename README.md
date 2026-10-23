@@ -14,7 +14,7 @@ See [DESIGN.md](DESIGN.md) for the decisions behind it.
 | Endpoint | Bedrock's Messages-API endpoint (`bedrock-mantle.{region}.api.aws`), SigV4 with the Lambda role |
 | Region | The region you deploy to (tested target: `us-east-1`). Any region that has both Claude in Amazon Bedrock and Bedrock AgentCore Memory works, e.g. `us-east-1`, `us-west-2`, `eu-central-1`. |
 
-To use another model, set `MODEL_ID` when deploying, for example `MODEL_ID=anthropic.claude-sonnet-5-5 npm run deploy`.
+To use another model, set `MODEL_ID` when deploying, for example `MODEL_ID=anthropic.claude-sonnet-5-5 npm run deploy`. Ids in the Messages-API form (`anthropic.claude-…`, no version suffix) use that endpoint; inference-profile or versioned ids such as `us.anthropic.claude-opus-4-6-v1` use the Converse API. A new AWS account may need the Anthropic use case form submitted and non-zero Bedrock quotas for the chosen model (Service Quotas → Amazon Bedrock).
 
 ## Prerequisites
 

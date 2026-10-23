@@ -1,19 +1,30 @@
-"""Claude on Amazon Bedrock through the Messages-API endpoint (bedrock-mantle).
+"""Claude on Amazon Bedrock.
 
-Claude Opus 5.5 and the other current models are served on
-https://bedrock-mantle.{region}.api.aws/anthropic, not through the Converse
-API, so the agent uses Strands' Anthropic provider with the SDK's SigV4 Mantle
-client (Lambda role credentials, no API key).
+Claude Opus 5.5 and the other current models are served on Bedrock's
+Messages-API endpoint (https://bedrock-mantle.{region}.api.aws/anthropic), not
+through the Converse API, so the agent uses Strands' Anthropic provider with the
+SDK's SigV4 Mantle client (Lambda role credentials, no API key). Earlier Claude
+models (e.g. us.anthropic.claude-opus-4-6-v1) go through Converse; see uses_converse().
 """
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from anthropic import AnthropicBedrockMantle, AsyncAnthropicBedrockMantle
 from strands.models.anthropic import AnthropicModel
 
 THINKING_TYPES = {"thinking", "redacted_thinking"}
+
+# Messages-API (Mantle) ids look like "anthropic.claude-opus-5-5". Ids with a
+# cross-region prefix ("us.anthropic..."), a version suffix ("...-v1", "...-v1:0")
+# or an ARN are Bedrock runtime models, called through the Converse API.
+_CONVERSE_ID = re.compile(r"^(arn:|(us|eu|apac|jp|au|global|us-gov)\.)|-v\d+(:\d+)?$")
+
+
+def uses_converse(model_id: str) -> bool:
+    return bool(_CONVERSE_ID.search(model_id))
 
 
 def strip_prior_turn_thinking(messages: list[dict]) -> list[dict]:

@@ -1,6 +1,7 @@
 """Request shape sent to Claude on Bedrock (no network)."""
 
-from helperpay.agent.model import BedrockMantleModel, strip_prior_turn_thinking
+from helperpay.agent.model import BedrockMantleModel, strip_prior_turn_thinking, uses_converse
+from helperpay.agent.runtime import Settings, make_model
 from helperpay.agent.prompts import SYSTEM_PROMPT
 
 
@@ -37,3 +38,14 @@ def test_strip_is_noop_without_history():
 def test_system_prompt_is_stable():
     # It must be byte-identical across a conversation, so nothing time-varying in it.
     assert "{" not in SYSTEM_PROMPT and "Today is" not in SYSTEM_PROMPT
+
+
+def test_model_id_picks_the_bedrock_api():
+    assert not uses_converse("anthropic.claude-opus-5-5")
+    assert not uses_converse("anthropic.claude-sonnet-5-5")
+    assert uses_converse("us.anthropic.claude-opus-4-6-v1")
+    assert uses_converse("anthropic.claude-haiku-4-5-20251001-v1:0")
+    assert uses_converse("global.anthropic.claude-opus-5-5")
+    assert uses_converse("arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/x")
+    assert type(make_model(Settings(model_id="anthropic.claude-opus-5-5"))).__name__ == "BedrockMantleModel"
+    assert type(make_model(Settings(model_id="us.anthropic.claude-opus-4-6-v1"))).__name__ == "BedrockModel"
