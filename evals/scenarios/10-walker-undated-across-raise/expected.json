@@ -1,0 +1,12 @@
+{
+  "title": "Undated count across a rate change",
+  "tests": "A lump '20 walks' can't be priced when the rate changed mid-month.",
+  "helpers": {
+    "Nico": {
+      "supported": "0.00",
+      "to_decide": "460.00",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

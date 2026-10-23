@@ -1,0 +1,12 @@
+{
+  "title": "Screenshots only, two lesson lengths",
+  "tests": "Rates and bill read from images; one lesson overbilled.",
+  "helpers": {
+    "Clara": {
+      "supported": "250.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

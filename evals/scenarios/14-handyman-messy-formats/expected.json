@@ -1,0 +1,12 @@
+{
+  "title": "Messy dates and times",
+  "tests": "Mixed date and time formats in one bill.",
+  "helpers": {
+    "Sal": {
+      "supported": "467.50",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

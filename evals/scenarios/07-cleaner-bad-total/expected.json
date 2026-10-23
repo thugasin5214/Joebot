@@ -1,0 +1,12 @@
+{
+  "title": "Lines don't add up",
+  "tests": "The stated total is higher than the lines; pay by the lines.",
+  "helpers": {
+    "Rosa": {
+      "supported": "360.00",
+      "to_decide": "0",
+      "total_adds_up": false,
+      "flags": []
+    }
+  }
+}

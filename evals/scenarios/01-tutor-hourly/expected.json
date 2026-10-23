@@ -1,0 +1,12 @@
+{
+  "title": "Hourly tutor, partial hours",
+  "tests": "Plain hourly rate with half-hour sessions.",
+  "helpers": {
+    "Maya": {
+      "supported": "225.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

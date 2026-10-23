@@ -1,0 +1,12 @@
+{
+  "title": "Notes disagree with a newer text",
+  "tests": "A newer accepted written rate beats Jordan's recollection.",
+  "helpers": {
+    "Ana": {
+      "supported": "165.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

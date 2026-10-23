@@ -1,0 +1,12 @@
+{
+  "title": "Charge nobody agreed to",
+  "tests": "An extra item goes to Jordan to decide; it is never priced as agreed.",
+  "helpers": {
+    "Kim": {
+      "supported": "200.00",
+      "to_decide": "35.00",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

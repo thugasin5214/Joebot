@@ -87,6 +87,20 @@ The local model is for iterating on prompts and flows; the deployed app always u
 uv run --project backend python scripts/e2e_starter_pack.py ../candidate-pack/starter-pack
 ```
 
+## How we know it's right
+
+Three layers, from cheapest to closest to real use. Details and the full scorecard are in [evals/README.md](evals/README.md).
+
+| Layer | What it covers | Result |
+|---|---|---|
+| **Backend tests** (`npm test`) | 53 tests. Bill rules, confirmation and locking rules, the API, and that no agent tool can save terms or approve a bill. Includes property tests that check the bill checker against a separate minute-by-minute reference on about 7,000 random agreements, shifts and bills per run. | All pass. Five bugs injected into the checker on purpose were all caught. |
+| **Starter pack, end to end** | The 8 files driven through the API like Jordan, compared with the answer key | Matched on the deployed app with Claude Opus 4.6, and locally |
+| **Unseen-input eval** (`evals/`) | 17 new households, each with a hand-worked answer key: weekly pay, an unaccepted raise, prompt injection in a bill, undated counts across a rate change, screenshot-only input, flat-then-hourly, per-mile rates, and more. Each run starts from an empty app; every proposal is confirmed, no bill is approved, and code grades the amounts to the cent. | **49/51** (17 scenarios × 3 runs) with the local model `qwen3.8-27b-splash` |
+
+The two eval failures were both in the model's reading, not the pricing. In one, it took "for the fall" to mean from Sep 22, said so on the proposal card, and so couldn't check three earlier weeks. In the other, it told Jordan it had proposed terms but hadn't created the proposal, so the bill couldn't be recorded. In the app, proposal cards come from the records, not from what the assistant says, so Jordan would see that nothing was waiting.
+
+The eval was run on the local model: partway through the project, AWS suspended Bedrock on my new test account pending account verification. To run it on Claude: `uv run --project backend python evals/run.py --bedrock --runs 3`.
+
 ## Release pipeline with a coding agent (optional)
 
 A closed loop inside AWS: ask for a change in plain words, an agent writes it, the pipeline tests it and puts it on a staging copy, and a person approves it before it reaches production.
@@ -127,6 +141,7 @@ A new rate or helper is data, not code: Jordan enters it in the app. The pipelin
 | `frontend/` | React web app |
 | `infra/lib/stack.ts` | CDK stack |
 | `infra/lib/pipeline-stack.ts` | Optional release pipeline and coding agent |
+| `evals/` | Unseen-input eval: 17 scenarios with answer keys, the runner, and results |
 | `scripts/` | One-command deploy and destroy, pipeline setup, `change` requests, starter-pack end-to-end run |
 
 ## Costs

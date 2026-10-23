@@ -1,0 +1,12 @@
+{
+  "title": "Raise announced, never accepted",
+  "tests": "A one-sided rate change must not become the agreement.",
+  "helpers": {
+    "Kai": {
+      "supported": "270.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

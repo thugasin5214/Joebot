@@ -1,0 +1,12 @@
+{
+  "title": "Weekly flat salary",
+  "tests": "A per-week price (not hourly) and one week overbilled.",
+  "helpers": {
+    "Grace": {
+      "supported": "2600.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Hourly plus per-mile",
+  "tests": "Two kinds of terms on one bill, including a per-mile rate.",
+  "helpers": {
+    "Marco": {
+      "supported": "130.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

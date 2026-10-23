@@ -1,0 +1,18 @@
+{
+  "title": "Two helpers at once, one only remembered",
+  "tests": "Several helpers in one batch; terms from Jordan's memory alone still work once confirmed.",
+  "helpers": {
+    "Ella": {
+      "supported": "216.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    },
+    "Omar": {
+      "supported": "200.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

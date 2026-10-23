@@ -1,0 +1,12 @@
+{
+  "title": "Raise mid-month, accepted",
+  "tests": "A new rate from a stated date; older visits keep the old rate.",
+  "helpers": {
+    "Tomás": {
+      "supported": "260.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "title": "Duplicate day and wrong weekday",
+  "tests": "The same day billed twice, and a weekday that doesn't match its date.",
+  "helpers": {
+    "Bea": {
+      "supported": "125.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": [
+        "billed 2 times",
+        "is a Thursday"
+      ]
+    }
+  }
+}

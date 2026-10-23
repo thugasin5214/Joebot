@@ -1,0 +1,12 @@
+{
+  "title": "Late rate plus Saturday double time",
+  "tests": "Time-of-day tier past midnight, and a day multiplier that is agreed to apply to all hours.",
+  "helpers": {
+    "Leo": {
+      "supported": "300.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

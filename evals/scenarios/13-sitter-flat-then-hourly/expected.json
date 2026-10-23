@@ -1,0 +1,12 @@
+{
+  "title": "Flat package with overtime",
+  "tests": "A flat price until 10pm, then hourly for the overtime.",
+  "helpers": {
+    "Zoe": {
+      "supported": "197.50",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}

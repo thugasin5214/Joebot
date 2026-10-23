@@ -1,0 +1,12 @@
+{
+  "title": "One-off swap on a date",
+  "tests": "A deep clean agreed for one date instead of the regular visit.",
+  "helpers": {
+    "Ines": {
+      "supported": "590.00",
+      "to_decide": "0",
+      "total_adds_up": true,
+      "flags": []
+    }
+  }
+}
