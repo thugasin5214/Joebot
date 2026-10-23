@@ -1,6 +1,9 @@
 """Drive the starter pack through a running API, the way Jordan would in the UI.
 
     uv run --project backend python scripts/e2e_starter_pack.py STARTER_PACK_DIR [--api http://localhost:8787]
+    E2E_PASSWORD=... uv run --project backend python scripts/e2e_starter_pack.py STARTER_PACK_DIR --app https://dxxxx.cloudfront.net
+
+With --app, it reads the deployed app's config.json and signs in as jordan through Cognito.
 
 Uploads the agreement documents, confirms every proposal the assistant makes,
 uploads the September bills, and prints each bill's verdict next to the answer
@@ -20,10 +23,34 @@ from pathlib import Path
 EXPECTED = {"priya": 556.0, "lupe": 800.0, "theo": 580.0}  # amount the agreements support
 
 
+TOKEN: str | None = None
+
+
+def sign_in(app_url: str) -> str:
+    """Returns the API URL, after signing in as jordan (password from E2E_PASSWORD)."""
+    global TOKEN
+    import os
+
+    import boto3
+
+    with urllib.request.urlopen(app_url.rstrip("/") + "/config.json", timeout=30) as r:
+        cfg = json.loads(r.read())
+    idp = boto3.client("cognito-idp", region_name=cfg["auth"]["region"])
+    res = idp.initiate_auth(
+        ClientId=cfg["auth"]["userPoolClientId"], AuthFlow="USER_PASSWORD_AUTH",
+        AuthParameters={"USERNAME": "jordan", "PASSWORD": os.environ["E2E_PASSWORD"]},
+    )
+    TOKEN = res["AuthenticationResult"]["IdToken"]
+    return cfg["apiUrl"]
+
+
 def call(api: str, method: str, path: str, body: dict | None = None):
+    headers = {"content-type": "application/json"}
+    if TOKEN:
+        headers["authorization"] = f"Bearer {TOKEN}"
     req = urllib.request.Request(
         api + path, method=method, data=json.dumps(body).encode() if body is not None else None,
-        headers={"content-type": "application/json"},
+        headers=headers,
     )
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.loads(r.read())
@@ -68,7 +95,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pack", type=Path)
     ap.add_argument("--api", default="http://localhost:8787")
+    ap.add_argument("--app", help="deployed app URL; signs in through Cognito")
     a = ap.parse_args()
+    if a.app:
+        a.api = sign_in(a.app)
 
     print("1. Agreements")
     docs = ["01-household-notes.txt", "02-priya-rates.png", "03-lupe-rates.png", "04-lupe-rate-change.txt", "05-theo-rates.png"]
