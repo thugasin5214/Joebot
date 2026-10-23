@@ -139,3 +139,25 @@ def test_pending_terms_change_blocks_approval(hh):
         hh.approve_bill(LUPE_BILL.bill_id, {}, D(780))
     hh.confirm_proposal(p["proposal_id"])
     hh.approve_bill(LUPE_BILL.bill_id, {}, D(800))
+
+
+def test_new_helper_history_can_be_proposed_and_confirmed_together(hh):
+    # First upload: Lupe isn't recorded yet, but her v1 and v2 arrive together.
+    lupe = Helper(helper_id="lupe", name="Lupe", role="cleaner").model_dump()
+    props = [hh.propose("agreement", agreement_payload(v, lupe), f"Lupe v{i+1}") for i, v in enumerate(LUPE)]
+    for p in reversed(props):  # order of confirmation doesn't matter
+        hh.confirm_proposal(p["proposal_id"])
+    assert len(hh.helpers()) == 1
+    assert sorted(str(v.effective_from) for v in hh.versions("lupe")) == ["2026-01-20", "2026-09-15"]
+    hh.record_bill(LUPE_BILL)
+    assert hh.check(LUPE_BILL.bill_id).expected_total == D("800")
+
+
+def test_new_helper_id_clash_with_a_different_person_is_refused(hh):
+    add_lupe(hh, LUPE[:1])
+    other = Helper(helper_id="lupe", name="Guadalupe M.", role="nanny").model_dump()
+    # Proposed before Lupe existed would carry new_helper; simulate by writing the proposal directly.
+    p = hh.propose("agreement", agreement_payload(LUPE[1]), "Lupe v2")
+    hh.db.put(f"PROPOSAL#{p['proposal_id']}", {**p, "payload": {**p["payload"], "new_helper": other}})
+    with pytest.raises(Conflict):
+        hh.confirm_proposal(p["proposal_id"])

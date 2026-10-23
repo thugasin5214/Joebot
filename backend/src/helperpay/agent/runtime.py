@@ -41,6 +41,9 @@ class Settings:
     region: str = os.environ.get("AWS_REGION", "us-east-1")
     memory_id: str | None = os.environ.get("MEMORY_ID") or None
     local_sessions: str = os.environ.get("LOCAL_SESSION_DIR", ".local/sessions")
+    # Local development only: an OpenAI-compatible server (LM Studio, Ollama) instead of Bedrock.
+    local_model: str | None = os.environ.get("LOCAL_MODEL") or None
+    local_model_url: str = os.environ.get("LOCAL_MODEL_URL", "http://localhost:1234/v1")
 
 
 def namespaces(actor_id: str = ACTOR_ID, session_id: str = "{sessionId}") -> dict[str, str]:
@@ -74,14 +77,24 @@ def session_manager(settings: Settings, session_id: str):
     return FileSessionManager(session_id=session_id, storage_dir=settings.local_sessions)
 
 
-def bedrock_model(settings: Settings):
+def make_model(settings: Settings):
+    if settings.local_model:
+        from strands.models.openai import OpenAIModel
+
+        return OpenAIModel(
+            client_args={"base_url": settings.local_model_url, "api_key": "local"},
+            model_id=settings.local_model,
+            params={"max_tokens": 16000},
+        )
     from .model import BedrockMantleModel
 
     return BedrockMantleModel(model_id=settings.model_id, region=settings.region, effort=settings.effort)
 
 
 def make_transcriber(settings: Settings, blobs: Blobs):
-    """Screenshot -> verbatim text, via the same Claude model on Bedrock."""
+    """Screenshot -> verbatim text, via the same model the assistant uses."""
+    if settings.local_model:
+        return _local_transcriber(settings, blobs)
 
     def transcribe(src: dict) -> str:
         import base64
@@ -114,9 +127,34 @@ def make_transcriber(settings: Settings, blobs: Blobs):
     return transcribe
 
 
+def _local_transcriber(settings: Settings, blobs: Blobs):
+    def transcribe(src: dict) -> str:
+        import base64
+
+        from openai import OpenAI
+
+        data = base64.b64encode(blobs.get(src["blob_key"])).decode()
+        r = OpenAI(base_url=settings.local_model_url, api_key="local").chat.completions.create(
+            model=settings.local_model,
+            max_tokens=4000,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": {"url": f"data:{src.get('content_type') or 'image/png'};base64,{data}"}},
+                        {"type": "text", "text": TRANSCRIBE_PROMPT},
+                    ],
+                }
+            ],
+        )
+        return (r.choices[0].message.content or "").strip()
+
+    return transcribe
+
+
 def build_agent(ctx: TurnContext, settings: Settings, model: Any = None) -> Agent:
     return Agent(
-        model=model or bedrock_model(settings),
+        model=model or make_model(settings),
         system_prompt=SYSTEM_PROMPT,
         tools=build_tools(ctx),
         session_manager=session_manager(settings, ctx.session_id),

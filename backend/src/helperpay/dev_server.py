@@ -1,9 +1,10 @@
 """Local development server: same API, file-backed storage, no AWS needed.
 
-    uv run python -m helperpay.dev_server [--seed] [--bedrock] [--port 8787]
+    uv run python -m helperpay.dev_server [--seed] [--bedrock | --local-model NAME] [--port 8787]
 
 --seed [DIR]  load the starter pack (and its documents from DIR) as pending proposals and open bills (for UI work)
 --bedrock  use Claude on Bedrock with your local AWS credentials
+--local-model NAME  use a model on a local OpenAI-compatible server (LM Studio by default; --local-url to change)
 """
 
 from __future__ import annotations
@@ -49,10 +50,12 @@ class FileStore(MemoryStore):
         self._save()
 
 
-def make_app(use_bedrock: bool) -> App:
+def make_app(use_bedrock: bool, local_model: str | None = None, local_url: str | None = None) -> App:
     store = FileStore(DATA / "db.json")
     blobs = LocalBlobs(DATA / "blobs")
-    settings = Settings(memory_id=None, local_sessions=str(DATA / "sessions"))
+    settings = Settings(memory_id=None, local_sessions=str(DATA / "sessions"), local_model=local_model)
+    if local_url:
+        settings.local_model_url = local_url
     app_ref: dict = {}
 
     def start_job(job):
@@ -60,7 +63,7 @@ def make_app(use_bedrock: bool) -> App:
 
     model = None
     transcribe = None
-    if use_bedrock:
+    if use_bedrock or local_model:
         transcribe = make_transcriber(settings, blobs)
     else:
         from .offline import offline_model
@@ -107,14 +110,16 @@ def main():
     ap.add_argument("--port", type=int, default=8787)
     ap.add_argument("--seed", nargs="?", const="", default=None, metavar="STARTER_PACK_DIR")
     ap.add_argument("--bedrock", action="store_true")
+    ap.add_argument("--local-model", metavar="NAME")
+    ap.add_argument("--local-url", metavar="URL")
     args = ap.parse_args()
-    app = make_app(args.bedrock)
+    app = make_app(args.bedrock, args.local_model, args.local_url)
     if args.seed is not None:
         from .offline import seed_starter_pack
 
         seed_starter_pack(app.hh, args.seed or None)
         print("Seeded the starter pack.")
-    print(f"API on http://localhost:{args.port}  (model: {'Bedrock' if args.bedrock else 'offline stub'})")
+    print(f"API on http://localhost:{args.port}  (model: {args.local_model or ('Bedrock' if args.bedrock else 'offline stub')})")
     ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(app)).serve_forever()
 
 

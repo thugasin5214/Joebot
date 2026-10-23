@@ -367,7 +367,13 @@ class Household:
 
     def _apply_agreement(self, p: AgreementProposal, proposal_id: str) -> dict:
         a = p.agreement
-        if p.new_helper:
+        existing = self.helper(a.helper_id)
+        if p.new_helper and existing:
+            # A new helper's history arrives as several proposals at once (Lupe v1 and v2);
+            # confirming the first one adds her, the rest just add versions.
+            if existing.name.casefold() != p.new_helper.name.casefold():
+                raise Conflict(f"A different helper '{existing.name}' already uses the id '{a.helper_id}'.")
+        elif p.new_helper:
             try:
                 self.db.put(f"HELPER#{a.helper_id}", p.new_helper.model_dump(mode="json"), if_absent=True)
             except ConditionFailed:

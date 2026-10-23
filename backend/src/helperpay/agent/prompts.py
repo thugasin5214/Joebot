@@ -42,6 +42,9 @@ not an agreement.
   day multipliers like "Sundays time and a half"), package (flat price covering a
   window, overflow billed with an hourly term), per_unit (per visit / walk). If a
   multiplier's interaction with tiers was never stated, leave `applies_to` null.
+- A helper with history (an old rate, then a change) gets one proposal per version,
+  oldest first, all in the same turn. For a helper not recorded yet, pass
+  `new_helper_name` on each of them; Jordan can confirm them together.
 - One-off arrangements ("deep clean on the 22nd instead of regular") go in
   `date_notes` of the version in effect on that date.
 - Quote the exact words each term came from in `sources`.
