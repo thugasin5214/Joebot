@@ -16,10 +16,6 @@
 
 **Infrastructure.** One CDK stack: Cognito (single admin-created user, password in Secrets Manager), API Gateway HTTP API with a JWT authorizer on every route plus throttling, a Python Lambda (bundled with uv, no Docker), DynamoDB (on-demand, PITR), private S3 buckets, CloudFront for the SPA, and AgentCore Memory with semantic/preference/summary strategies. Nothing is account- or region-specific; everything is destroyed on teardown.
 
-**Releasing changes.** An optional pipeline stack closes the loop inside AWS. `npm run change -- "…"` runs Claude Code in CodeBuild; its IAM role can push only to the `proposed` branch. CodePipeline then verifies, deploys staging, waits for a person to approve, and only then deploys production and moves `main`. Each stage checks it has the exact tree Verify tested.
-
-![Release pipeline: a change request goes to a coding agent that can push only to the proposed branch; CodePipeline verifies it, deploys staging, waits for a person to approve, then deploys production and moves main.](docs/release-pipeline.svg)
-
 **Known failure modes.** Transcription or extraction can misread a screenshot. Mitigations: the original image sits next to its transcript, every term carries a source quote, and Jordan confirms terms before they're used. A misread line is fixed in the bill's line editor (date, times, amount, which term it maps to); the checker re-prices on save, the edit is audited, and approved bills refuse edits. Schemas cover hourly/tiered/multiplier, flat packages with overtime, and per-unit pricing; anything else (mileage, percentage tips) becomes "needs your decision" rather than a wrong number. Bedrock's Messages-API endpoint has no published resource ARN format yet, so `bedrock-mantle:CreateInference` is granted on `*`.
 
 **Deliberately left out.** Real payments, notifications, multiple users or households, editing approved bills, an "undo" for confirmed terms (a new version supersedes instead).
